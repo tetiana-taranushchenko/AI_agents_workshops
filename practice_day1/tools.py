@@ -23,10 +23,14 @@ def get_file_content(path: str) -> str:
     Args:
         path: Relative path to the file within the repository (e.g., "app.py", "models.py")
     """
-    # TODO: read the file at REPO_PATH / path and return its contents.
-    #       Handle the case when the file doesn't exist — return an error
-    #       message instead of letting it raise.
-    pass
+    file_path = REPO_PATH / path
+    try:
+        return file_path.read_text(encoding="utf-8", errors="replace")
+    except FileNotFoundError:
+        return f"Error: file not found: {path}"
+    except OSError as e:
+        return f"Error reading {path}: {e}"
+
 
 
 @tool
@@ -37,12 +41,22 @@ def search_codebase(query: str) -> str:
     Args:
         query: Search term — a function name, class name, keyword, or pattern
     """
-    # TODO: walk REPO_PATH with Path.rglob, read each file with
-    #       encoding="utf-8", errors="replace", and collect lines containing
-    #       `query` as "filepath:lineno:line". If there are none, return a
-    #       clear "no matches" message (otherwise the LLM thinks the search
-    #       failed). Use Python instead of `grep` so it works on Windows too.
-    pass
+    matches = []
+    for file_path in REPO_PATH.rglob("*"):
+        if not file_path.is_file():
+            continue
+        try:
+            lines = file_path.read_text(encoding="utf-8", errors="replace").splitlines()
+        except OSError:
+            continue
+        relative_path = file_path.relative_to(REPO_PATH)
+        for lineno, line in enumerate(lines, start=1):
+            if query in line:
+                matches.append(f"{relative_path}:{lineno}:{line.strip()}")
+
+    if not matches:
+        return f"No matches found for '{query}'."
+    return "\n".join(matches)
 
 
 @tool
@@ -54,12 +68,16 @@ def get_git_diff(commit_a: str, commit_b: str) -> str:
         commit_a: First commit hash or branch name (e.g., "HEAD~3")
         commit_b: Second commit hash or branch name (e.g., "HEAD")
     """
-    # TODO: run `git diff {commit_a} {commit_b}` via subprocess.
-    #       Watch the working directory — it must be inside the git repo.
-    #       Pass encoding="utf-8", errors="replace" so non-ASCII bytes don't
-    #       crash on Windows (cp1252 default codepage).
-    #       Return the diff output, or a "no differences" message if empty.
-    pass
+    result = subprocess.run(
+        ["git", "diff", commit_a, commit_b],
+        cwd=REPO_PATH,
+        capture_output=True,
+        encoding="utf-8",
+        errors="replace",
+    )
+    if result.returncode != 0:
+        return f"Error running git diff: {result.stderr}"
+    return result.stdout or "No differences found."
 
 
 # All tools in a list — used by the agent
