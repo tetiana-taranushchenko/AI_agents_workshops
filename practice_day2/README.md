@@ -134,15 +134,15 @@ tool in the toolbox. The LLM picks which tool(s) to call per turn.
 
 ## Task (25 min)
 
-| Step | Where        | What to do                                                           | Time   |
-|------|--------------|----------------------------------------------------------------------|--------|
-| 1    | `rag.py`     | **Load** documents with `DirectoryLoader` (glob `*.md`)              | 3 min  |
-| 2    | `rag.py`     | **Split** into chunks with `RecursiveCharacterTextSplitter` (500/50) | 3 min  |
-| 3    | `rag.py`     | **Embed** + store in FAISS, expose `retriever` (`k=3`)               | 5 min  |
-| 4    | `rag.py`     | **Tool** — implement `search_knowledge_base(query)` body             | 4 min  |
-| 5    | `agent.py`   | **Combine tools** — `day1_tools + [search_knowledge_base]`           | 2 min  |
-| 6    | `agent.py`   | **Graph** — same pattern as Day 1 (chatbot + ToolNode + edges)       | 5 min  |
-| 7    | `agent.py`   | **Checkpointer** — `MemorySaver` + `compile(checkpointer=…)`         | 3 min  |
+| Step | Where      | What to do                                                           | Time  |
+| ---- | ---------- | -------------------------------------------------------------------- | ----- |
+| 1    | `rag.py`   | **Load** documents with `DirectoryLoader` (glob `*.md`)              | 3 min |
+| 2    | `rag.py`   | **Split** into chunks with `RecursiveCharacterTextSplitter` (500/50) | 3 min |
+| 3    | `rag.py`   | **Embed** + store in FAISS, expose `retriever` (`k=3`)               | 5 min |
+| 4    | `rag.py`   | **Tool** — implement `search_knowledge_base(query)` body             | 4 min |
+| 5    | `agent.py` | **Combine tools** — `day1_tools + [search_knowledge_base]`           | 2 min |
+| 6    | `agent.py` | **Graph** — same pattern as Day 1 (chatbot + ToolNode + edges)       | 5 min |
+| 7    | `agent.py` | **Checkpointer** — `MemorySaver` + `compile(checkpointer=…)`         | 3 min |
 
 ### ✅ Checkpoint after Step 4
 
@@ -184,19 +184,24 @@ uv run python practice_day2/chat.py
 ## Demo Queries to Try
 
 1. **Code review with RAG (wow moment)**
+
    ```
    Review utils.py against our coding standards.
    ```
-   The agent reads the file *and* calls `search_knowledge_base` on its own —
+
+   The agent reads the file _and_ calls `search_knowledge_base` on its own —
    you didn't have to tell it to.
 
 2. **No-RAG path** — shows the agent picks when to retrieve
+
    ```
    Find bugs in utils.py.
    ```
+
    Should NOT call the RAG tool — bug hunting is about logic, not standards.
 
 3. **Testing guidelines**
+
    ```
    What do our testing guidelines say about coverage? Does this project follow them?
    ```
@@ -246,21 +251,27 @@ fast.
 Run all three queries in the same chat session:
 
 1. **Safe path — no approval needed**
+
    ```
    Find bugs in utils.py.
    ```
+
    The agent makes 2–3 tool calls (`get_file_content`, `search_codebase`)
    without asking anything.
 
 2. **Risky path — deny**
+
    ```
    Write a PR summary for the last 3 commits.
    ```
+
    You should see:
+
    ```
    ⚠️  Agent wants to call: get_git_diff({'commit_a': 'HEAD~3', 'commit_b': 'HEAD'})
       Approve? (y/n):
    ```
+
    Type `n` — the agent receives "Action denied" and adapts (tries a
    different approach, or says it can't proceed without the diff).
 

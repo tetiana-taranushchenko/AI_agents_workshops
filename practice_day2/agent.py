@@ -34,8 +34,7 @@ load_dotenv()
 # Step 1: Combine Day 1 tools + RAG tool
 # ============================================================
 
-# TODO: Merge Day 1 tools with the RAG tool into one list
-# combined_tools = day1_tools + [search_knowledge_base]
+combined_tools = day1_tools + [search_knowledge_base]
 
 
 # ============================================================
@@ -50,10 +49,10 @@ class State(TypedDict):
 # Step 3: Set up the LLM with ALL tools
 # ============================================================
 
-# TODO: Initialize the LLM and bind the combined tools
-# Hint: from config import LLM_MODEL
-#       llm = ChatOpenAI(model=LLM_MODEL)
-#       llm_with_tools = llm.bind_tools(combined_tools)
+from config import LLM_MODEL
+
+llm = ChatOpenAI(model=LLM_MODEL)
+llm_with_tools = llm.bind_tools(combined_tools)
 
 
 # ============================================================
@@ -62,24 +61,20 @@ class State(TypedDict):
 
 def chatbot(state: State):
     """The main LLM node."""
-    # TODO: return {"messages": [llm_with_tools.invoke(state["messages"])]}
-    pass
+    return {"messages": [llm_with_tools.invoke(state["messages"])]}
 
 
-# TODO: Build the graph — same as Day 1 but with combined_tools
-# graph_builder = StateGraph(State)
-# graph_builder.add_node("chatbot", chatbot)
-# graph_builder.add_node("tools", ToolNode(tools=combined_tools))
-# graph_builder.add_edge(START, "chatbot")
-# graph_builder.add_conditional_edges("chatbot", tools_condition)
-# graph_builder.add_edge("tools", "chatbot")
+graph_builder = StateGraph(State)
+graph_builder.add_node("chatbot", chatbot)
+graph_builder.add_node("tools", ToolNode(tools=combined_tools))
+graph_builder.add_edge(START, "chatbot")
+graph_builder.add_conditional_edges("chatbot", tools_condition)
+graph_builder.add_edge("tools", "chatbot")
 
 
 # ============================================================
 # Step 5: Checkpointer (same as Day 1)
 # ============================================================
 
-# TODO: Create a MemorySaver and compile the graph with checkpointer=<it>.
-#       chat.py already passes config={"configurable": {"thread_id": "1"}}.
-# memory = MemorySaver()
-# graph = graph_builder.compile(checkpointer=memory)
+memory = MemorySaver()
+graph = graph_builder.compile(checkpointer=memory)

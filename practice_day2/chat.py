@@ -3,7 +3,7 @@
 from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
 
 from prompts import SYSTEM_PROMPT
-from solution_agent import graph
+from agent import graph
 
 THREAD_ID = "1"
 EXIT_COMMANDS = {"quit", "exit", "q"}

@@ -11,43 +11,46 @@ Steps:
 4. Create a retriever tool for the agent
 """
 
+from dotenv import load_dotenv
+from langchain_community.document_loaders import DirectoryLoader, TextLoader
+from langchain_community.vectorstores import FAISS
 from langchain_core.tools import tool
+from langchain_openai import OpenAIEmbeddings
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from config import KNOWLEDGE_BASE_PATH
+
+load_dotenv()
 
 
 # ============================================================
 # Step 1: Load documents
 # ============================================================
 
-# TODO: Load all .md files from KNOWLEDGE_BASE_PATH into a list of documents.
-#       Use DirectoryLoader + TextLoader from langchain_community.document_loaders.
-#       Glob pattern should match markdown files only.
-#       Pass loader_kwargs={"encoding": "utf-8"} to DirectoryLoader so it
-#       works on Windows (default codepage is cp1251/cp1252, not UTF-8).
-#       Assign the result to a variable named `docs` — you'll use it in Step 2.
+loader = DirectoryLoader(
+    str(KNOWLEDGE_BASE_PATH),
+    glob="*.md",
+    loader_cls=TextLoader,
+    loader_kwargs={"encoding": "utf-8"},
+)
+docs = loader.load()
 
 
 # ============================================================
 # Step 2: Split into chunks
 # ============================================================
 
-# TODO: Split `docs` into smaller chunks for better retrieval.
-#       Use RecursiveCharacterTextSplitter from langchain_text_splitters.
-#       Experiment with chunk_size (300–800) and overlap (~10% of chunk_size).
-#       Call .split_documents(docs) to get the list. Assign to `chunks`.
+splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
+chunks = splitter.split_documents(docs)
 
 
 # ============================================================
 # Step 3: Create vector store
 # ============================================================
 
-# TODO: Embed `chunks` and store them in an in-memory vector DB.
-#       Use FAISS (from langchain_community.vectorstores) + OpenAIEmbeddings
-#       (from langchain_openai). FAISS.from_documents(...) builds the store.
-#       Then expose a retriever via .as_retriever(search_kwargs={"k": <n>}).
-#       k = how many chunks to return per query. Start with 3.
-#       Assign the retriever to `retriever` — Step 4 uses it.
+embeddings = OpenAIEmbeddings()
+vectorstore = FAISS.from_documents(chunks, embeddings)
+retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
 
 
 # ============================================================
@@ -62,11 +65,10 @@ def search_knowledge_base(query: str) -> str:
     Args:
         query: What to search for (e.g., "naming conventions", "error handling", "test coverage")
     """
-    # TODO: Call retriever.invoke(query) to get the top-k chunks.
-    #       Each chunk is a Document with a .page_content field.
-    #       Join the page_content of all results into one readable string
-    #       (a separator like "\n\n---\n\n" works well).
-    pass
+    results = retriever.invoke(query)
+    if not results:
+        return "No relevant standards found."
+    return "\n\n---\n\n".join(doc.page_content for doc in results)
 
 
 # ============================================================
@@ -74,12 +76,10 @@ def search_knowledge_base(query: str) -> str:
 # ============================================================
 # Run this file directly to check that RAG works:
 #   uv run python rag.py
-#
-# Uncomment the block below once Steps 1–4 are done.
-#
-# if __name__ == "__main__":
-#     print(f"Loaded {len(docs)} documents")
-#     print(f"Split into {len(chunks)} chunks")
-#     print(f"Vector store ready")
-#     print(f"\n--- Test search: 'error handling' ---\n")
-#     print(search_knowledge_base.invoke("error handling"))
+
+if __name__ == "__main__":
+    print(f"Loaded {len(docs)} documents")
+    print(f"Split into {len(chunks)} chunks")
+    print(f"Vector store ready")
+    print(f"\n--- Test search: 'error handling' ---\n")
+    print(search_knowledge_base.invoke("error handling"))
